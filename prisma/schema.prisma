@@ -1,0 +1,201 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum City {
+  MADRID
+  ZARAGOZA
+  VALLADOLID
+}
+
+model Zone {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String?
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  users       User[]
+  leagueZones LeagueZone[]
+}
+
+enum PlayPreference {
+  INDOOR_SIMULATOR
+  PRACTICE_RANGE
+}
+
+model User {
+  id               String    @id @default(cuid())
+  name             String?
+  lastName         String?
+  email            String?   @unique
+  emailVerified    DateTime?
+  image            String?
+  role             String    @default("USER")
+  licenseNumber    String?   @unique
+  handicap         Float     @default(54.0)
+  handicapVerified Boolean   @default(false)
+  hashedPassword   String?
+  phone            String?
+  playPreference   PlayPreference?
+  city             City?
+  zoneId           String?
+  zone             Zone?     @relation(fields: [zoneId], references: [id])
+
+  accounts         Account[]
+  sessions         Session[]
+  assignments      PlayerGroupAssignment[]
+  matchesAsHomePlayer Match[] @relation("HomeMatches")
+  matchesAsAwayPlayer Match[] @relation("AwayMatches")
+  wonMatches       Match[]   @relation("Winner")
+  subscription     Subscription[]
+}
+
+model Season {
+  id        String     @id @default(cuid())
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean    @default(false)
+  divisions Division[]
+}
+
+model Division {
+  id         String  @id @default(cuid())
+  name       String
+  levelOrder Int
+  season     Season  @relation(fields: [seasonId], references: [id])
+  seasonId   String
+  league     League? @relation(fields: [leagueId], references: [id])
+  leagueId   String?
+  groups     Group[]
+}
+
+model Group {
+  id         String                  @id @default(cuid())
+  name       String
+  division   Division                @relation(fields: [divisionId], references: [id])
+  divisionId String
+  players    PlayerGroupAssignment[]
+  matches    Match[]
+}
+
+model PlayerGroupAssignment {
+  id       String @id @default(cuid())
+  player   User   @relation(fields: [playerId], references: [id])
+  playerId String
+  group    Group  @relation(fields: [groupId], references: [id])
+  groupId  String
+
+  @@unique([playerId, groupId])
+}
+
+model Match {
+  id               String         @id @default(cuid())
+  roundNumber      Int
+  group            Group?         @relation(fields: [groupId], references: [id])
+  groupId          String?
+  homePlayer       User           @relation("HomeMatches", fields: [homePlayerId], references: [id])
+  homePlayerId     String
+  awayPlayer       User           @relation("AwayMatches", fields: [awayPlayerId], references: [id])
+  awayPlayerId     String
+  homePlayerScore  Int?
+  awayPlayerScore  Int?
+  matchType        String         @default("GROUP_STAGE")
+  winner           User?          @relation("Winner", fields: [winnerId], references: [id])
+  winnerId         String?
+  status           String         @default("PENDING")
+  matchDate        DateTime?
+  deadlineDate     DateTime
+  knockoutRound    KnockoutRound? @relation(fields: [knockoutRoundId], references: [id])
+  knockoutRoundId  String?
+}
+
+model PartnerVenue {
+  id      String  @id @default(cuid())
+  name    String
+  address String?
+  website String?
+  logoUrl String?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model League {
+  id            String         @id @default(cuid())
+  name          String
+  startDate     DateTime
+  endDate       DateTime
+  divisions     Division[]
+  subscriptions Subscription[]
+  leagueZones   LeagueZone[]
+}
+
+model LeagueZone {
+  id       String @id @default(cuid())
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  leagueId String
+  zone     Zone   @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  zoneId   String
+  
+  @@unique([leagueId, zoneId])
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  league    League   @relation(fields: [leagueId], references: [id])
+  leagueId  String
+  paid      Boolean  @default(false)
+  startDate DateTime
+  endDate   DateTime
+
+  @@unique([userId, leagueId])
+}
+
+model KnockoutRound {
+  id         String  @id @default(cuid())
+  leagueId   String
+  roundName  String
+  roundOrder Int
+  matches    Match[]
+}
