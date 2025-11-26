@@ -8,7 +8,18 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Protección para rutas de usuario normal
-  if ((pathname.startsWith("/profile") || pathname.startsWith("/dashboard")) && !token) {
+  const userRoutes = [
+    "/profile",
+    "/dashboard",
+    "/dashboard/matches",
+    "/dashboard/stats", 
+    "/dashboard/standings",
+    "/dashboard/zone"
+  ];
+
+  const isUserRoute = userRoutes.some(route => pathname.startsWith(route));
+
+  if (isUserRoute && !token) {
     const signinUrl = new URL("/signin", req.url);
     signinUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signinUrl);
@@ -38,5 +49,9 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/profile/:path*", "/dashboard/:path*", "/admin/:path*"],
-}; 
+  matcher: [
+    "/profile/:path*",
+    "/dashboard/:path*",
+    "/admin/:path*"
+  ],
+};

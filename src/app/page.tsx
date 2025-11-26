@@ -10,11 +10,19 @@ export default function HomePage() {
   return (
     <main className="min-h-screen">
       <Hero />
-      <Reveal><About /></Reveal>
-      <Reveal offset={0.5}><HowItWorks /></Reveal>
+      <Reveal>
+        <About />
+      </Reveal>
+      <Reveal offset={0.5}>
+        <HowItWorks />
+      </Reveal>
       <Pricing />
-      <Reveal><Rules /></Reveal>
-      <Reveal><Partners /></Reveal>
+      <Reveal>
+        <Rules />
+      </Reveal>
+      <Reveal>
+        <Partners />
+      </Reveal>
     </main>
   );
 }

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Formulario de Registro</title>
+</head>
+<body>
+    <h1>Prueba de funcionalidad del formulario</h1>
+    <p>Abre la consola del navegador y ve a http://localhost:3002/register para ver el formulario en acción.</p>
+    
+    <script>
+        // Función para probar los endpoints
+        async function testEndpoints() {
+            try {
+                console.log('Probando endpoint de liga activa...');
+                const leagueResponse = await fetch('/api/active-league');
+                const leagueData = await leagueResponse.json();
+                console.log('Liga activa:', leagueData);
+                
+                console.log('Probando endpoint de zonas...');
+                const zonesResponse = await fetch('/api/zones-by-city?city=MADRID');
+                const zonesData = await zonesResponse.json();
+                console.log('Zonas de Madrid:', zonesData);
+                
+            } catch (error) {
+                console.error('Error al probar endpoints:', error);
+            }
+        }
+        
+        // Ejecutar la prueba cuando se cargue la página
+        window.addEventListener('load', testEndpoints);
+    </script>
+</body>
+</html>

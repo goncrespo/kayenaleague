@@ -4,6 +4,14 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 
+const defaultHost =
+  process.env.NEXTAUTH_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
+if (!process.env.NEXTAUTH_URL) {
+  process.env.NEXTAUTH_URL = defaultHost;
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -48,15 +56,18 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Permitir URLs relativas
-      if (url.startsWith("/")) return url;
-      // Permitir URLs del mismo origen
-      try {
-        const u = new URL(url);
-        if (u.origin === baseUrl) return url;
-      } catch {}
-      // Por defecto, vuelve al home del mismo origen
-      return baseUrl;
+      // Si es una URL completa y válida, usarla
+      if (url && url.startsWith("http")) {
+        return url;
+      }
+      
+      // Si es una URL relativa, usarla
+      if (url && url.startsWith("/")) {
+        return url;
+      }
+      
+      // Si no hay URL específica, ir al dashboard
+      return `${baseUrl}/dashboard`;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
@@ -64,4 +75,4 @@ export const authOptions: NextAuthOptions = {
 
 const handler = NextAuth(authOptions);
 
-export { handler as GET, handler as POST }; 
+export { handler as GET, handler as POST };

@@ -13,21 +13,78 @@ enum City {
   VALLADOLID
 }
 
-model Zone {
-  id          String @id @default(cuid())
-  name        String @unique
-  description String?
-  isActive    Boolean @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  users       User[]
-  leagueZones LeagueZone[]
-}
-
 enum PlayPreference {
   INDOOR_SIMULATOR
   PRACTICE_RANGE
+}
+
+enum ZoneName {
+  NORTE
+  SUR
+  CENTRO
+  ESTE
+  OESTE
+}
+
+enum MatchStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum ResultStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CompetitionStatus {
+  DRAFT
+  REGISTRATION
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CompetitionType {
+  LEAGUE
+  TOURNAMENT
+  CUP
+}
+
+model Zone {
+  id          String    @id @default(cuid())
+  name        ZoneName  @unique
+  description String?
+  isActive    Boolean   @default(true)
+  coordinates String?   // "lat,lng" del centro
+  districts   String[]  // Distritos incluidos
+  maxCapacity Int       @default(100)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  users         User[]
+  leagueZones   LeagueZone[]
+  homeZonePrefs ZonePreference[] @relation("HomeZone")
+  venues        PartnerVenue[]
+}
+
+model ZonePreference {
+  id          String @id @default(cuid())
+  userId      String @unique
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  homeZoneId  String
+  homeZone    Zone   @relation("HomeZone", fields: [homeZoneId], references: [id])
+  
+  travelRange Int    @default(10) // km
+  preferences Json?  // Horarios, días preferidos
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([homeZoneId])
 }
 
 model User {
@@ -47,6 +104,7 @@ model User {
   city             City?
   zoneId           String?
   zone             Zone?     @relation(fields: [zoneId], references: [id])
+  paid             Boolean   @default(false)
 
   accounts         Account[]
   sessions         Session[]
@@ -55,6 +113,75 @@ model User {
   matchesAsAwayPlayer Match[] @relation("AwayMatches")
   wonMatches       Match[]   @relation("Winner")
   subscription     Subscription[]
+  zonePreference   ZonePreference?
+  playerStats      PlayerStats?
+  reportedResults  MatchResult[] @relation("ReportedByUser")
+  competitionPlayers CompetitionPlayer[]
+  
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([zoneId])
+}
+
+model PlayerStats {
+  id              String @id @default(cuid())
+  userId          String @unique
+  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  totalMatches    Int    @default(0)
+  wins            Int    @default(0)
+  draws           Int    @default(0)
+  losses          Int    @default(0)
+  
+  totalPoints     Int    @default(0)
+  avgPoints       Float  @default(0)
+  
+  holesWon        Int    @default(0)
+  holesLost       Int    @default(0)
+  holesDiff       Int    @default(0)
+  
+  currentStreak   Int    @default(0)
+  bestStreak      Int    @default(0)
+  
+  updatedAt       DateTime @updatedAt
+}
+
+model Competition {
+  id            String             @id @default(cuid())
+  name          String
+  description   String?
+  type          CompetitionType    @default(LEAGUE)
+  status        CompetitionStatus  @default(DRAFT)
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean            @default(false)
+  price         Decimal            @db.Decimal(10, 2)
+  city          City
+  
+  players       CompetitionPlayer[]
+  groups        Group[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([city])
+  @@index([isActive])
+  @@index([status])
+}
+
+model CompetitionPlayer {
+  id            String       @id @default(cuid())
+  competition   Competition  @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  competitionId String
+  player        User         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId      String
+  registeredAt  DateTime     @default(now())
+  isActive      Boolean      @default(true)
+  
+  @@unique([competitionId, playerId])
+  @@index([competitionId])
+  @@index([playerId])
 }
 
 model Season {
@@ -64,6 +191,9 @@ model Season {
   endDate   DateTime
   isActive  Boolean    @default(false)
   divisions Division[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Division {
@@ -75,15 +205,29 @@ model Division {
   league     League? @relation(fields: [leagueId], references: [id])
   leagueId   String?
   groups     Group[]
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([seasonId])
+  @@index([leagueId])
 }
 
 model Group {
-  id         String                  @id @default(cuid())
-  name       String
-  division   Division                @relation(fields: [divisionId], references: [id])
-  divisionId String
-  players    PlayerGroupAssignment[]
-  matches    Match[]
+  id           String                  @id @default(cuid())
+  name         String
+  division     Division                @relation(fields: [divisionId], references: [id])
+  divisionId   String
+  competition  Competition?            @relation(fields: [competitionId], references: [id])
+  competitionId String?
+  players      PlayerGroupAssignment[]
+  matches      Match[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([divisionId])
+  @@index([competitionId])
 }
 
 model PlayerGroupAssignment {
@@ -94,6 +238,8 @@ model PlayerGroupAssignment {
   groupId  String
 
   @@unique([playerId, groupId])
+  @@index([playerId])
+  @@index([groupId])
 }
 
 model Match {
@@ -110,11 +256,42 @@ model Match {
   matchType        String         @default("GROUP_STAGE")
   winner           User?          @relation("Winner", fields: [winnerId], references: [id])
   winnerId         String?
-  status           String         @default("PENDING")
+  status           MatchStatus    @default(PENDING)
   matchDate        DateTime?
   deadlineDate     DateTime
   knockoutRound    KnockoutRound? @relation(fields: [knockoutRoundId], references: [id])
   knockoutRoundId  String?
+  
+  result           MatchResult?
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([homePlayerId])
+  @@index([awayPlayerId])
+  @@index([groupId])
+  @@index([winnerId])
+}
+
+model MatchResult {
+  id          String       @id @default(cuid())
+  matchId     String       @unique
+  match       Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  
+  reportedBy  String
+  reporter    User         @relation("ReportedByUser", fields: [reportedBy], references: [id], onDelete: Cascade)
+  homeScore   Int
+  awayScore   Int
+  
+  status      ResultStatus @default(PENDING)
+  approvedBy  String?      // adminId
+  notes       String?
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([reportedBy])
+  @@index([matchId])
 }
 
 model PartnerVenue {
@@ -123,8 +300,67 @@ model PartnerVenue {
   address String?
   website String?
   logoUrl String?
+  zoneId  String?
+  zone    Zone?   @relation(fields: [zoneId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([zoneId])
 }
 
+model League {
+  id            String         @id @default(cuid())
+  name          String
+  startDate     DateTime
+  endDate       DateTime
+  divisions     Division[]
+  subscriptions Subscription[]
+  leagueZones   LeagueZone[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model LeagueZone {
+  id       String @id @default(cuid())
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  leagueId String
+  zone     Zone   @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  zoneId   String
+  
+  @@unique([leagueId, zoneId])
+  @@index([leagueId])
+  @@index([zoneId])
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  league    League   @relation(fields: [leagueId], references: [id])
+  leagueId  String
+  paid      Boolean  @default(false)
+  startDate DateTime
+  endDate   DateTime
+
+  @@unique([userId, leagueId])
+  @@index([userId])
+  @@index([leagueId])
+}
+
+model KnockoutRound {
+  id         String  @id @default(cuid())
+  leagueId   String
+  roundName  String
+  roundOrder Int
+  matches    Match[]
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// NextAuth Models
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -141,6 +377,7 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -149,6 +386,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -157,45 +396,4 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
-}
-
-model League {
-  id            String         @id @default(cuid())
-  name          String
-  startDate     DateTime
-  endDate       DateTime
-  divisions     Division[]
-  subscriptions Subscription[]
-  leagueZones   LeagueZone[]
-}
-
-model LeagueZone {
-  id       String @id @default(cuid())
-  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  leagueId String
-  zone     Zone   @relation(fields: [zoneId], references: [id], onDelete: Cascade)
-  zoneId   String
-  
-  @@unique([leagueId, zoneId])
-}
-
-model Subscription {
-  id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  league    League   @relation(fields: [leagueId], references: [id])
-  leagueId  String
-  paid      Boolean  @default(false)
-  startDate DateTime
-  endDate   DateTime
-
-  @@unique([userId, leagueId])
-}
-
-model KnockoutRound {
-  id         String  @id @default(cuid())
-  leagueId   String
-  roundName  String
-  roundOrder Int
-  matches    Match[]
 }

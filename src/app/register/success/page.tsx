@@ -1,9 +1,11 @@
 interface Props {
-  searchParams?: { [key: string]: string | string[] | undefined };
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export default function RegisterSuccessPage({ searchParams }: Props) {
-  const noPayment = typeof searchParams?.noPayment === "string" ? true : false;
+export default async function RegisterSuccessPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const noPayment = typeof params?.noPayment === "string" ? true : false;
+
   return (
     <main className="min-h-screen flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-xl card text-center space-y-4">
@@ -24,4 +26,3 @@ export default function RegisterSuccessPage({ searchParams }: Props) {
     </main>
   );
 }
-

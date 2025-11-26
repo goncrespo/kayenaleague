@@ -6,6 +6,21 @@ import { registerAction, type RegisterState } from "./actions";
 import Alert from "@/components/ui/Alert";
 import { apiFetch, ApiError } from "@/lib/http";
 
+interface Zone {
+  id: string;
+  name: string;
+  label: string;
+  description?: string | null;
+}
+
+interface Competition {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  price: number;
+}
+
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
@@ -21,24 +36,83 @@ export default function RegisterForm() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [price, setPrice] = useState<string>("");
   const [priceError, setPriceError] = useState<string | null>(null);
+  const [activeLeague, setActiveLeague] = useState<Competition | null>(null);
+  const [zones, setZones] = useState<Zone[]>([]);
 
+  // Cargar competición activa cuando se selecciona ciudad
   useEffect(() => {
-    async function loadPrice() { //Llamada a stripe para traer el precio.
+    if (!city) {
+      setActiveLeague(null);
+      setPrice("—");
+      return;
+    }
+
+    async function loadCompetition() {
       try {
+        const comp = await apiFetch<Competition>(`/api/active-competition?city=${city}`, { cache: "no-store" });
+        setActiveLeague(comp);
+        setPrice(`${Number(comp.price).toFixed(2)} €`);
         setPriceError(null);
-        const data = await apiFetch<{ unitAmountFormatted: string }>("/api/price", { cache: "no-store" });
-        setPrice(data.unitAmountFormatted);
       } catch (err) {
-        const message = err instanceof ApiError ? err.message : "No se pudo cargar el precio";
-        setPriceError(message);
+        console.error("Error al cargar competición:", err);
+        setActiveLeague(null);
         setPrice("—");
+        setPriceError("No hay competición activa en esta ciudad");
       }
     }
-    loadPrice();
-  }, []);
+
+    loadCompetition();
+  }, [city]);
+  const [loadingZones, setLoadingZones] = useState(false);
+  const [selectedZone, setSelectedZone] = useState("");
+
+  // Precio desde la liga activa
+  useEffect(() => {
+    if (activeLeague?.price != null) {
+      const numericPrice = Number(activeLeague.price);
+      if (!isNaN(numericPrice)) {
+        setPrice(`${numericPrice.toFixed(2)} €`);
+      } else {
+        setPrice("—");
+        setPriceError("Precio no válido");
+      }
+    } else {
+      setPrice("—");
+      setPriceError("No se pudo cargar el precio");
+    }
+  }, [activeLeague]);
+
+  // Cargar zonas cuando se selecciona ciudad
+  useEffect(() => {
+    async function loadZones() {
+      if (!city) {
+        setZones([]);
+        setSelectedZone("");
+        return;
+      }
+
+      setLoadingZones(true);
+      try {
+        const zonesData = await apiFetch<Zone[]>(`/api/zones-by-city?city=${city}`, { cache: "no-store" });
+        setZones(zonesData);
+        setSelectedZone("");
+      } catch (err) {
+        console.error("Error al cargar las zonas:", err);
+        setZones([]);
+        setSelectedZone("");
+      } finally {
+        setLoadingZones(false);
+      }
+    }
+    loadZones();
+  }, [city]);
 
   return (
     <form action={action} className="space-y-4">
+      {/* Campo oculto con el ID de la liga activa */}
+      {activeLeague && (
+        <input type="hidden" name="leagueId" value={activeLeague.id} />
+      )}
       <h1 className="text-2xl font-semibold text-center">Crear cuenta</h1>
 
       {priceError && <Alert variant="warning">{priceError}</Alert>}
@@ -96,6 +170,32 @@ export default function RegisterForm() {
         </select>
         {state?.errors?.city && <p className="text-xs text-red-600">{state.errors.city}</p>}
       </div>
+
+      {/* Select de zona - solo se muestra cuando hay una ciudad seleccionada */}
+      {city && (
+        <div className="space-y-2">
+          <label htmlFor="zoneId" className="block text-sm font-medium">Zona</label>
+          <select 
+            id="zoneId" 
+            name="zoneId" 
+            required 
+            className="input" 
+            value={selectedZone}
+            onChange={(e) => setSelectedZone(e.target.value)}
+            disabled={loadingZones}
+          >
+            <option value="" disabled>
+              {loadingZones ? "Cargando zonas..." : "Selecciona una zona"}
+            </option>
+            {zones.map((zone) => (
+              <option key={zone.id} value={zone.id} className="text-gray-900">
+                {zone.label}
+              </option>
+            ))}
+          </select>
+          {state?.errors?.zoneId && <p className="text-xs text-red-600">{state.errors.zoneId}</p>}
+        </div>
+      )}
 
       {city === "MADRID" && (
         <div className="space-y-2">
