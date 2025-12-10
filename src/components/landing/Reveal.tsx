@@ -31,7 +31,7 @@ export default function Reveal({ children, offset = 0.15, className }: PropsWith
           }
         });
       },
-      { threshold: 1 - offset },
+      { threshold: offset },
     );
 
     observer.observe(el);

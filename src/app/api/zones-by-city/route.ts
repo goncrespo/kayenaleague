@@ -23,15 +23,13 @@ export async function GET(request: Request) {
         name: true,
         description: true,
       },
-      orderBy: {
-        name: "asc",
-      },
+      // orderBy removed to avoid potential enum sorting issues
     });
 
     // Mapear los nombres de zona a español
     const zoneNamesInSpanish = {
       NORTE: "Norte",
-      SUR: "Sur", 
+      SUR: "Sur",
       CENTRO: "Centro",
       ESTE: "Este",
       OESTE: "Oeste",

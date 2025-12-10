@@ -33,6 +33,7 @@ export async function apiFetch<T>(input: RequestInfo | URL, init?: RequestInit):
     if (!res.ok) {
       const errPayload = payload as { message?: string; error?: string } | null;
       const message = (errPayload && (errPayload.message || errPayload.error)) || `Error ${res.status}`;
+      console.error(`[API Error] ${input} returned ${res.status}: ${message}`);
       throw new ApiError({ message, status: res.status, details: payload });
     }
     return payload as T;

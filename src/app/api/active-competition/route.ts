@@ -1,12 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { City } from "@prisma/client";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const city = searchParams.get("city");
 
-    if (!city || !["MADRID", "ZARAGOZA", "VALLADOLID"].includes(city)) {
+    if (!city || !Object.values(City).includes(city as City)) {
       return NextResponse.json({ error: "Ciudad no válida" }, { status: 400 });
     }
 
@@ -15,7 +18,7 @@ export async function GET(request: Request) {
 
     const competition = await prisma.competition.findFirst({
       where: {
-        city: city as any,
+        city: city as City,
         startDate: { lte: now },
         endDate: { gte: now },
         isActive: true,
