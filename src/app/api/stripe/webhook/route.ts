@@ -29,48 +29,23 @@ export async function POST(req: NextRequest) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.userId as string | undefined;
-        const customerEmail = session.customer_details?.email || session.customer_email;
+
         if (userId) {
-          // Para pago único, podemos marcar un flag en usuario o crear un registro simple.
-          // Aquí, simplemente marcamos paid=true en una suscripción anual por defecto si existiera el modelo,
-          // o puedes reemplazar por otra persistencia según tu negocio.
-          await prisma.user.update({ where: { id: userId }, data: { role: "USER" } });
+          const user = await prisma.user.update({
+            where: { id: userId },
+            data: { role: "USER" }
+          });
+
+          if (user && user.email) {
+            const date = new Date().toLocaleDateString("es-ES", { year: 'numeric', month: 'long', day: 'numeric' });
+            await sendWelcomeEmail({
+              to: user.email,
+              name: user.name || "Jugador",
+              username: user.email.split('@')[0],
+              date: date
+            });
+          }
         }
-        if (customerEmail) {
-          await sendWelcomeEmail({ to: customerEmail });
-        }
-
-        // Crear usuario solo si el pago fue exitoso
-        const user = await prisma.user.create({
-          data: {
-            name: meta.name,
-            lastName: meta.lastName,
-            email: meta.email,
-            hashedPassword: meta.hashedPassword,
-            licenseNumber: meta.licenseNumber || undefined,
-            phone: meta.phone,
-            city: meta.city as any,
-            zoneId: meta.zoneId,
-            playPreference: meta.playPreference || undefined,
-            handicap: meta.handicap ? parseFloat(meta.handicap) : undefined,
-            handicapVerified: meta.handicapVerified === "true",
-            paid: true, // ✅ Marcar como pagado
-          },
-        });
-        console.log("✅ Usuario creado:", user.email, "ID:", user.id);
-
-        // Alta en la liga
-        await prisma.competitionPlayer.create({
-          data: {
-            competitionId: meta.competitionId,
-            playerId: user.id,
-            registeredAt: new Date(),
-            isActive: true,
-          },
-        });
-
-        // Email de bienvenida
-        await sendWelcomeEmail({ to: user.email! });
         break;
       }
       default:
