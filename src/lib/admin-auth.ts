@@ -1,7 +1,7 @@
 import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
-import { SignJWT, jwtVerify } from "jose";
+import { SignJWT, jwtVerify, JWTPayload } from "jose";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "your-secret-key-change-this-in-production"
@@ -50,7 +50,7 @@ export async function verifyAdminCredentials(
 
     // Verificar la contraseña
     const isValidPassword = await bcrypt.compare(password, user.hashedPassword);
-    
+
     if (!isValidPassword) {
       return null;
     }
@@ -73,10 +73,10 @@ export async function verifyAdminCredentials(
  * @returns Token JWT
  */
 export async function createAdminSession(user: AdminUser): Promise<string> {
-  const token = await new SignJWT({ 
+  const token = await new SignJWT({
     userId: user.id,
     email: user.email,
-    role: user.role 
+    role: user.role
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -91,7 +91,7 @@ export async function createAdminSession(user: AdminUser): Promise<string> {
  * @param token - Token JWT
  * @returns Payload del token si es válido, null en caso contrario
  */
-export async function verifyAdminSession(token: string): Promise<any | null> {
+export async function verifyAdminSession(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
     return payload;
@@ -115,7 +115,7 @@ export async function getCurrentAdmin(): Promise<AdminUser | null> {
     }
 
     const payload = await verifyAdminSession(sessionToken);
-    
+
     if (!payload) {
       return null;
     }
@@ -153,7 +153,7 @@ export async function getCurrentAdmin(): Promise<AdminUser | null> {
  */
 export async function setAdminSessionCookie(token: string): Promise<void> {
   const cookieStore = await cookies();
-  
+
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

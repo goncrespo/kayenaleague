@@ -23,7 +23,7 @@ export async function apiFetch<T>(input: RequestInfo | URL, init?: RequestInit):
     const res = await fetch(input, { ...init });
     const contentType = res.headers.get("content-type") ?? "";
 
-    let payload: any = null;
+    let payload: unknown = null;
     if (contentType.includes("application/json")) {
       payload = await res.json().catch(() => null);
     } else {
@@ -31,7 +31,8 @@ export async function apiFetch<T>(input: RequestInfo | URL, init?: RequestInit):
     }
 
     if (!res.ok) {
-      const message = (payload && (payload.message || payload.error)) || `Error ${res.status}`;
+      const errPayload = payload as { message?: string; error?: string } | null;
+      const message = (errPayload && (errPayload.message || errPayload.error)) || `Error ${res.status}`;
       throw new ApiError({ message, status: res.status, details: payload });
     }
     return payload as T;

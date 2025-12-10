@@ -39,39 +39,39 @@ export default function AdminPage() {
   const [availableLeagues, setAvailableLeagues] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
+    const fetchAdminUser = async () => {
+      try {
+        const response = await fetch("/api/admin/me");
+        if (response.ok) {
+          const userData = await response.json();
+          setAdminUser(userData);
+        }
+      } catch (error) {
+        console.error("Error fetching admin user:", error);
+      }
+    };
+
+    const fetchLeagues = async () => {
+      try {
+        const res = await fetch("/api/admin/leagues");
+        if (res.ok) {
+          const data = await res.json();
+          const mapped = (data || []).map((l: { id: string; name: string }) => ({ id: l.id, name: l.name }));
+          setAvailableLeagues(mapped);
+          if (!selectedLeagueForGroups && mapped.length > 0) {
+            setSelectedLeagueForGroups(mapped[0].id);
+          }
+        }
+      } catch {
+        // noop
+      }
+    };
+
     // Obtener información del usuario administrador actual
     fetchAdminUser();
     // Cargar ligas disponibles
     fetchLeagues();
-  }, []);
-
-  const fetchAdminUser = async () => {
-    try {
-      const response = await fetch("/api/admin/me");
-      if (response.ok) {
-        const userData = await response.json();
-        setAdminUser(userData);
-      }
-    } catch (error) {
-      console.error("Error fetching admin user:", error);
-    }
-  };
-
-  const fetchLeagues = async () => {
-    try {
-      const res = await fetch("/api/admin/leagues");
-      if (res.ok) {
-        const data = await res.json();
-        const mapped = (data || []).map((l: any) => ({ id: l.id, name: l.name }));
-        setAvailableLeagues(mapped);
-        if (!selectedLeagueForGroups && mapped.length > 0) {
-          setSelectedLeagueForGroups(mapped[0].id);
-        }
-      }
-    } catch (e) {
-      // noop
-    }
-  };
+  }, [selectedLeagueForGroups]);
 
   const handleLogout = async () => {
     setLogoutLoading(true);
@@ -79,7 +79,7 @@ export default function AdminPage() {
       const response = await fetch("/api/admin/logout", {
         method: "POST",
       });
-      
+
       if (response.ok) {
         // Redirigir al login
         window.location.href = "/admin/login";
@@ -108,14 +108,14 @@ export default function AdminPage() {
 
     try {
       const result = await createGroups(selectedLeagueForGroups, playersPerGroup);
-      
+
       if (result.success) {
         setMessages([{ type: "success", text: result.message }]);
         setActiveTab("matches");
       } else {
         setMessages([{ type: "error", text: result.message }]);
       }
-    } catch (error) {
+    } catch {
       setMessages([{ type: "error", text: "Error inesperado al crear grupos" }]);
     } finally {
       setLoading(null);
@@ -154,7 +154,7 @@ export default function AdminPage() {
 
   const handleAction = async (action: AdminAction) => {
     const inputValue = action.id === "generate-matches" ? selectedGroupId : selectedLeagueId;
-    
+
     if (!inputValue.trim()) {
       setMessages([{ type: "error", text: "Por favor, ingresa un ID válido" }]);
       return;
@@ -165,7 +165,7 @@ export default function AdminPage() {
 
     try {
       const result = await action.action(inputValue);
-      
+
       if (result.success) {
         setMessages([{ type: "success", text: result.message }]);
         // Limpiar inputs después de éxito
@@ -177,7 +177,7 @@ export default function AdminPage() {
       } else {
         setMessages([{ type: "error", text: result.message }]);
       }
-    } catch (error) {
+    } catch {
       setMessages([{ type: "error", text: "Error inesperado al ejecutar la acción" }]);
     } finally {
       setLoading(null);
@@ -202,7 +202,7 @@ export default function AdminPage() {
                   Gestiona la competición de golf desde este panel
                 </p>
               </div>
-              
+
               <div className="text-right">
                 {adminUser && (
                   <div className="mb-2">
@@ -215,11 +215,10 @@ export default function AdminPage() {
                 <button
                   onClick={handleLogout}
                   disabled={logoutLoading}
-                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                    logoutLoading
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-red-600 text-white hover:bg-red-700"
-                  }`}
+                  className={`px-3 py-1 text-sm rounded-md transition-colors ${logoutLoading
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-red-600 text-white hover:bg-red-700"
+                    }`}
                 >
                   {logoutLoading ? "Cerrando..." : "Cerrar Sesión"}
                 </button>
@@ -234,11 +233,10 @@ export default function AdminPage() {
                 {messages.map((message, index) => (
                   <div
                     key={index}
-                    className={`p-4 rounded-md mb-2 ${
-                      message.type === "success"
-                        ? "bg-green-50 border border-green-200 text-green-800"
-                        : "bg-red-50 border border-red-200 text-red-800"
-                    }`}
+                    className={`p-4 rounded-md mb-2 ${message.type === "success"
+                      ? "bg-green-50 border border-green-200 text-green-800"
+                      : "bg-red-50 border border-red-200 text-red-800"
+                      }`}
                   >
                     <div className="flex justify-between items-center">
                       <span>{message.text}</span>
@@ -266,12 +264,11 @@ export default function AdminPage() {
                 ].map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === tab.id
-                        ? "border-blue-500 text-blue-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
+                    onClick={() => setActiveTab(tab.id as "leagues" | "groups" | "matches" | "knockout" | "players")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      }`}
                   >
                     <span className="mr-2">{tab.icon}</span>
                     {tab.name}
@@ -285,7 +282,7 @@ export default function AdminPage() {
               {activeTab === "leagues" && (
                 <div className="space-y-6">
                   <CreateLeagueForm onLeagueCreated={handleLeagueCreated} />
-                  
+
                   {selectedLeagueForGroups && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <h4 className="font-medium text-blue-900 mb-2">Liga Seleccionada</h4>
@@ -293,7 +290,7 @@ export default function AdminPage() {
                         ID: <code className="bg-blue-100 px-1 rounded">{selectedLeagueForGroups}</code>
                       </p>
                       <p className="text-xs text-blue-600 mt-1">
-                        Ve a la pestaña "Grupos" para configurar los grupos de esta liga.
+                        Ve a la pestaña &quot;Grupos&quot; para configurar los grupos de esta liga.
                       </p>
                     </div>
                   )}
@@ -354,7 +351,7 @@ export default function AdminPage() {
                     <p className="text-sm text-gray-600 mb-4">
                       Genera los partidos de todos contra todos para un grupo específico.
                     </p>
-                    
+
                     <div className="space-y-4">
                       <div>
                         <label htmlFor="groupId" className="block text-sm font-medium text-gray-700 mb-2">
@@ -369,15 +366,14 @@ export default function AdminPage() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
-                      
+
                       <button
                         onClick={() => handleAction(adminActions.find(a => a.id === "generate-matches")!)}
                         disabled={loading === "generate-matches" || !selectedGroupId}
-                        className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${
-                          loading === "generate-matches" || !selectedGroupId
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            : "bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        }`}
+                        className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${loading === "generate-matches" || !selectedGroupId
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          }`}
                       >
                         {loading === "generate-matches" ? (
                           <div className="flex items-center">
@@ -402,7 +398,7 @@ export default function AdminPage() {
                     <p className="text-sm text-gray-600 mb-4">
                       Crea la fase de eliminatorias basada en la clasificación de los grupos.
                     </p>
-                    
+
                     <div className="space-y-4">
                       <div>
                         <label htmlFor="leagueId" className="block text-sm font-medium text-gray-700 mb-2">
@@ -417,15 +413,14 @@ export default function AdminPage() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
-                      
+
                       <button
                         onClick={() => handleAction(adminActions.find(a => a.id === "create-knockout")!)}
                         disabled={loading === "create-knockout" || !selectedLeagueId}
-                        className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${
-                          loading === "create-knockout" || !selectedLeagueId
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            : "bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                        }`}
+                        className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${loading === "create-knockout" || !selectedLeagueId
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                          }`}
                       >
                         {loading === "create-knockout" ? (
                           <div className="flex items-center">

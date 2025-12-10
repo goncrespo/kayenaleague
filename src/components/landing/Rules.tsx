@@ -13,26 +13,26 @@ export default function Rules() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section className="py-20 bg-neutral-900" aria-labelledby="rules-title">
+    <section className="py-20" aria-labelledby="rules-title">
       <div className="max-w-4xl mx-auto px-6">
-        <h2 id="rules-title" className="text-2xl md:text-3xl font-semibold text-center mb-10 text-neutral-100">Juego Limpio y Competición Sana.</h2>
+        <h2 id="rules-title" className="text-2xl md:text-3xl font-semibold text-center mb-10 text-white">Juego Limpio y Competición Sana.</h2>
         <div className="space-y-3">
           {items.map((item, i) => {
             const isOpen = open === i;
             return (
               <div
                 key={i}
-                className="group border border-neutral-800 rounded-xl p-4 bg-neutral-800/60 hover:bg-neutral-800/80 cursor-pointer transition-colors"
+                className="group border border-white/10 rounded-xl p-4 bg-white/5 hover:bg-white/10 cursor-pointer transition-all duration-300 hover:border-emerald-500/30"
                 onMouseEnter={() => setOpen(i)}
                 onClick={() => setOpen(isOpen ? null : i)}
               >
                 <div className="flex items-center justify-between select-none">
-                  <span className="font-medium text-neutral-100">{item.title}</span>
+                  <span className="font-medium text-white group-hover:text-emerald-300 transition-colors">{item.title}</span>
                   <motion.span
                     initial={false}
                     animate={{ rotate: isOpen ? 180 : 0 }}
                     transition={{ duration: 0.25 }}
-                    className="text-xl text-neutral-300"
+                    className="text-xl text-white/60 group-hover:text-white transition-colors"
                     aria-hidden
                   >
                     ▾
@@ -48,7 +48,7 @@ export default function Rules() {
                       transition={{ duration: 0.25 }}
                       className="overflow-hidden"
                     >
-                      <p className="mt-3 text-neutral-300">{item.body}</p>
+                      <p className="mt-3 text-gray-300">{item.body}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>

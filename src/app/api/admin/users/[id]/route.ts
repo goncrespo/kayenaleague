@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
+    const params = await props.params;
     const { id } = params;
     const body = await request.json();
 
-    const data: any = {};
+    const data: { handicap?: number; zoneId?: string | null } = {};
     if (typeof body.handicap === "number") {
       data.handicap = body.handicap;
     }

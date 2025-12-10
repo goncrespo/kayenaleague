@@ -73,9 +73,9 @@ export default function PlayersManager() {
     return (
       <div className="bg-white shadow rounded-lg p-6">
         <div className="animate-pulse space-y-3">
-          <div className="h-6 w-1/3 bg-gray-200 rounded"/>
-          <div className="h-4 w-1/2 bg-gray-200 rounded"/>
-          <div className="h-48 w-full bg-gray-200 rounded"/>
+          <div className="h-6 w-1/3 bg-gray-200 rounded" />
+          <div className="h-4 w-1/2 bg-gray-200 rounded" />
+          <div className="h-48 w-full bg-gray-200 rounded" />
         </div>
       </div>
     );
@@ -112,7 +112,7 @@ export default function PlayersManager() {
               <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Handicap</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Zona</th>
-              <th className="px-3 py-2"/>
+              <th className="px-3 py-2" />
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -134,7 +134,7 @@ export default function PlayersManager() {
                 <td className="px-3 py-2">
                   <select
                     defaultValue={p.zoneId || ""}
-                    onChange={(e) => updatePlayer(p.id, { zoneId: e.target.value || null } as any)}
+                    onChange={(e) => updatePlayer(p.id, { zoneId: e.target.value || null })}
                     className="px-2 py-1 border border-gray-300 rounded"
                   >
                     <option value="">Sin zona</option>

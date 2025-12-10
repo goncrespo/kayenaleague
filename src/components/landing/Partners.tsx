@@ -5,6 +5,7 @@ const partners = [
   { name: "Toptracer", src: "/images/window.svg" },
   { name: "Kayena", src: "/images/file.svg" },
   { name: "ZeroMed", src: "/images/zeromed.png" },
+  { name: "Dentica", src: "/images/dentica.png" },
 ];
 
 export default function Partners() {
@@ -15,8 +16,9 @@ export default function Partners() {
         <div className="relative overflow-hidden">
           <div className="flex gap-10 [animation:scroll_25s_linear_infinite] will-change-transform">
             {partners.concat(partners).map((p, idx) => {
-              const sizeClass = p.name === "ZeroMed" ? "h-16 md:h-20" : "h-10";
+              const sizeClass = (p.name === "ZeroMed" || p.name === "Dentica") ? "h-16 md:h-20" : "h-10";
               return (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={p.name + idx}
                   src={p.src}

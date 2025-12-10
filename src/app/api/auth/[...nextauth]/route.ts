@@ -30,7 +30,14 @@ export const authOptions: NextAuthOptions = {
         const ok = await bcrypt.compare(password, user.hashedPassword);
         if (!ok) return null;
         if (!user.emailVerified) return null;
-        return { id: user.id, name: user.name || undefined, email: user.email || undefined, image: user.image || undefined, role: (user as any).role } as any;
+        const u = user as unknown as { role: string; id: string };
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          role: u.role
+        };
       },
     }),
   ],
@@ -43,31 +50,30 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        (token as any).id = (user as any).id;
-        (token as any).role = (user as any).role ?? "USER";
+        const u = user as unknown as { role: string; id: string };
+        token.id = u.id;
+        token.role = u.role ?? "USER";
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = (token as any).id;
-        (session.user as any).role = (token as any).role ?? "USER";
+        const t = token as unknown as { role: string; id: string };
+        (session.user as { id: string; role: string }).id = t.id;
+        (session.user as { id: string; role: string }).role = t.role ?? "USER";
       }
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Si es una URL completa y válida, usarla
-      if (url && url.startsWith("http")) {
-        return url;
-      }
-      
-      // Si es una URL relativa, usarla
-      if (url && url.startsWith("/")) {
-        return url;
-      }
-      
-      // Si no hay URL específica, ir al dashboard
-      return `${baseUrl}/dashboard`;
+      // Permitir URLs relativas
+      if (url.startsWith("/")) return url;
+      // Permitir URLs del mismo origen
+      try {
+        const u = new URL(url);
+        if (u.origin === baseUrl) return url;
+      } catch { }
+      // Por defecto, vuelve al home del mismo origen
+      return baseUrl;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,

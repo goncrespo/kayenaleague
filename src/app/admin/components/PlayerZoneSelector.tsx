@@ -26,10 +26,10 @@ interface PlayerZoneSelectorProps {
   loading: boolean;
 }
 
-export default function PlayerZoneSelector({ 
-  leagueId, 
-  onCreateGroups, 
-  loading 
+export default function PlayerZoneSelector({
+  leagueId,
+  onCreateGroups,
+  loading
 }: PlayerZoneSelectorProps) {
   const [usersByZone, setUsersByZone] = useState<UsersByZone>({});
   const [zones, setZones] = useState<Zone[]>([]);
@@ -38,36 +38,36 @@ export default function PlayerZoneSelector({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchUsersByZone = async () => {
+      setFetchingUsers(true);
+      setError(null);
+
+      try {
+        // Obtener usuarios por zona
+        const usersResponse = await fetch(`/api/admin/users-by-zone?leagueId=${leagueId}`);
+        const usersData = await usersResponse.json();
+
+        // Obtener información de zonas
+        const zonesResponse = await fetch("/api/admin/zones");
+        const zonesData = await zonesResponse.json();
+
+        if (usersResponse.ok && zonesResponse.ok) {
+          setUsersByZone(usersData.usersByZone);
+          setZones(zonesData);
+        } else {
+          setError("Error al cargar datos");
+        }
+      } catch {
+        setError("Error de conexión");
+      } finally {
+        setFetchingUsers(false);
+      }
+    };
+
     if (leagueId) {
       fetchUsersByZone();
     }
   }, [leagueId]);
-
-  const fetchUsersByZone = async () => {
-    setFetchingUsers(true);
-    setError(null);
-    
-    try {
-      // Obtener usuarios por zona
-      const usersResponse = await fetch(`/api/admin/users-by-zone?leagueId=${leagueId}`);
-      const usersData = await usersResponse.json();
-      
-      // Obtener información de zonas
-      const zonesResponse = await fetch("/api/admin/zones");
-      const zonesData = await zonesResponse.json();
-      
-      if (usersResponse.ok && zonesResponse.ok) {
-        setUsersByZone(usersData.usersByZone);
-        setZones(zonesData);
-      } else {
-        setError("Error al cargar datos");
-      }
-    } catch (err) {
-      setError("Error de conexión");
-    } finally {
-      setFetchingUsers(false);
-    }
-  };
 
   const handleCreateGroups = () => {
     onCreateGroups(playersPerGroup);
@@ -137,7 +137,7 @@ export default function PlayerZoneSelector({
               const zone = zones.find(z => z.id === zoneId);
               const zoneName = zone?.name || zoneId;
               const groupsInZone = Math.floor(users.length / playersPerGroup);
-              
+
               return (
                 <div
                   key={zoneId}
@@ -181,11 +181,10 @@ export default function PlayerZoneSelector({
         <button
           onClick={handleCreateGroups}
           disabled={loading || totalUsers === 0}
-          className={`w-full py-2 px-4 rounded-md font-medium text-white transition-colors ${
-            loading || totalUsers === 0
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-          }`}
+          className={`w-full py-2 px-4 rounded-md font-medium text-white transition-colors ${loading || totalUsers === 0
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            }`}
         >
           {loading ? (
             <div className="flex items-center justify-center">

@@ -43,7 +43,7 @@ function validate(input: RegisterInput) {
   return errors;
 }
 
-async function fetchHandicap(licenseNumber: string): Promise<number> {
+async function fetchHandicap(): Promise<number> {
   await new Promise((r) => setTimeout(r, 200));
   return 18.5;
 }
@@ -81,22 +81,33 @@ export async function registerAction(
   let handicap: number | undefined;
   let handicapVerified = false;
   if (licenseNumber) {
-    handicap = await fetchHandicap(licenseNumber);
+    handicap = await fetchHandicap();
     handicapVerified = true;
   }
 
-  // Buscar competición activa en la ciudad seleccionada
-  const activeCompetition = await prisma.competition.findFirst({
-    where: {
-      city: city as any,
-      startDate: { lte: new Date() },
-      endDate: { gte: new Date() },
-      isActive: true,
+  const user = await prisma.user.create({
+    data: {
+      name,
+      lastName,
+      email,
+      hashedPassword,
+      licenseNumber: licenseNumber ?? undefined,
+      phone,
+      city,
+      ...(playPreference ? { playPreference } : {}),
+      ...(typeof handicap === "number" ? { handicap, handicapVerified } : {}),
     },
   });
 
-  if (!activeCompetition) {
-    return { ok: false, errors: { _form: `No hay competición activa en ${city}.` } } as const;
+  // Crear token de verificación y enviar email
+  const token = randomBytes(32).toString("hex");
+  const expires = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24h
+  await prisma.verificationToken.create({ data: { identifier: email, token, expires } });
+
+  try {
+    await sendVerificationEmail({ to: email, token });
+  } catch {
+    return { ok: false, errors: { _form: "Cuenta creada, pero no se pudo enviar el email de verificación. Intenta más tarde." } } as const;
   }
 
   // Crear sesión de Stripe con todos los datos del usuario en metadata
@@ -140,4 +151,4 @@ export async function registerAction(
 
   // Redirigir a Stripe Checkout
   redirect(session.url || cancelUrl);
-} 
+}

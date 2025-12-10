@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { prisma } from "@/lib/prisma";
 
 interface League {
   id: string;
@@ -97,7 +96,7 @@ export default function LeagueInfo() {
           Usa estos IDs en las acciones de administración
         </p>
       </div>
-      
+
       <div className="p-6">
         {leagues.length === 0 ? (
           <p className="text-gray-500 text-center py-4">

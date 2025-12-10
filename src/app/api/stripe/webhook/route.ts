@@ -20,21 +20,24 @@ export async function POST(req: NextRequest) {
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(rawBody, sig, STRIPE_WEBHOOK_SECRET);
-    console.log("✅ Webhook recibido:", event.type);
-  } catch (err) {
-    console.error("❌ Firma inválida:", err);
+  } catch {
     return NextResponse.json({ error: "Firma inválida" }, { status: 400 });
   }
 
   try {
     switch (event.type) {
       case "checkout.session.completed": {
-        const session = event.data.object as any;
-        console.log("📦 Metadata recibida:", session.metadata);
-        const meta = session.metadata;
-        if (!meta) {
-          console.warn("⚠️ Webhook sin metadata");
-          break;
+        const session = event.data.object as Stripe.Checkout.Session;
+        const userId = session.metadata?.userId as string | undefined;
+        const customerEmail = session.customer_details?.email || session.customer_email;
+        if (userId) {
+          // Para pago único, podemos marcar un flag en usuario o crear un registro simple.
+          // Aquí, simplemente marcamos paid=true en una suscripción anual por defecto si existiera el modelo,
+          // o puedes reemplazar por otra persistencia según tu negocio.
+          await prisma.user.update({ where: { id: userId }, data: { role: "USER" } });
+        }
+        if (customerEmail) {
+          await sendWelcomeEmail({ to: customerEmail });
         }
 
         // Crear usuario solo si el pago fue exitoso
@@ -73,24 +76,14 @@ export async function POST(req: NextRequest) {
       default:
         break;
     }
-  } catch (e) {
-    console.error("❌ Error procesando evento:", e);
+  } catch {
     return NextResponse.json({ error: "Error procesando evento" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
 }
 
-async function ensureDefaultLeague(): Promise<string> {
-  const league = await prisma.league.create({
-    data: {
-      name: "Kayena League",
-      startDate: new Date(),
-      endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-    },
-  });
-  return league.id;
-}
+
 
 export const dynamic = "force-dynamic"; // evitar caché
 export const runtime = "nodejs"; // Stripe SDK requiere Node.js runtime

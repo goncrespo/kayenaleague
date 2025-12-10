@@ -19,7 +19,7 @@ export async function createLeague(
     // Validar fechas
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     if (start >= end) {
       return { success: false, message: "La fecha de inicio debe ser anterior a la fecha de fin" };
     }
@@ -34,17 +34,17 @@ export async function createLeague(
     });
 
     revalidatePath("/admin");
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: `Liga "${name}" creada exitosamente`,
       leagueId: league.id
     };
 
   } catch (error) {
     console.error("Error creando liga:", error);
-    return { 
-      success: false, 
-      message: "Error interno del servidor al crear la liga" 
+    return {
+      success: false,
+      message: "Error interno del servidor al crear la liga"
     };
   }
 }
@@ -141,14 +141,14 @@ export async function createGroups(
     // Crear grupos procesando zona por zona
     for (const [zoneId, users] of sortedZoneEntries as Array<[string, SimpleUser[]]>) {
       const zoneName = `Zona ${zoneId.slice(0, 6)}`;
-      
+
       // Mezclar usuarios aleatoriamente dentro de la zona
       const shuffledUsers = [...users].sort(() => Math.random() - 0.5);
-      
+
       // Crear grupos con el número especificado de jugadores
       for (let i = 0; i < shuffledUsers.length; i += playersPerGroup) {
         const groupUsers = shuffledUsers.slice(i, i + playersPerGroup);
-        
+
         if (groupUsers.length === playersPerGroup) {
           // Crear el grupo con tag de zona
           const group = await prisma.group.create({
@@ -177,16 +177,16 @@ export async function createGroups(
     }
 
     revalidatePath("/admin");
-    return { 
-      success: true, 
-      message: `Se crearon ${totalGroupsCreated} grupos exitosamente con ${playersPerGroup} jugadores cada uno` 
+    return {
+      success: true,
+      message: `Se crearon ${totalGroupsCreated} grupos exitosamente con ${playersPerGroup} jugadores cada uno`
     };
 
   } catch (error) {
     console.error("Error creando grupos:", error);
-    return { 
-      success: false, 
-      message: "Error interno del servidor al crear grupos" 
+    return {
+      success: false,
+      message: "Error interno del servidor al crear grupos"
     };
   }
 }
@@ -235,10 +235,10 @@ export async function generateGroupMatches(groupId: string): Promise<{ success: 
       for (let j = i + 1; j < players.length; j++) {
         const player1 = players[i];
         const player2 = players[j];
-        
+
         // Asignar aleatoriamente quién es local y quién visitante
         const isPlayer1Home = Math.random() > 0.5;
-        
+
         matches.push({
           roundNumber: 1, // Todos los partidos de grupo son ronda 1
           groupId: group.id,
@@ -257,16 +257,16 @@ export async function generateGroupMatches(groupId: string): Promise<{ success: 
     });
 
     revalidatePath("/admin");
-    return { 
-      success: true, 
-      message: `Se generaron ${matches.length} partidos para el grupo ${group.name}` 
+    return {
+      success: true,
+      message: `Se generaron ${matches.length} partidos para el grupo ${group.name}`
     };
 
   } catch (error) {
     console.error("Error generando partidos de grupo:", error);
-    return { 
-      success: false, 
-      message: "Error interno del servidor al generar partidos" 
+    return {
+      success: false,
+      message: "Error interno del servidor al generar partidos"
     };
   }
 }
@@ -319,14 +319,14 @@ export async function createKnockoutStage(leagueId: string): Promise<{ success: 
     }
 
     const allGroups = league.divisions.flatMap(div => div.groups);
-    
+
     if (allGroups.length === 0) {
       return { success: false, message: "No hay grupos creados para esta liga" };
     }
 
     // Calcular clasificación de cada grupo
     const groupStandings = [];
-    
+
     for (const group of allGroups) {
       const standings = await calculateGroupStandings(group);
       groupStandings.push({
@@ -347,13 +347,13 @@ export async function createKnockoutStage(leagueId: string): Promise<{ success: 
 
     // Generar los cruces para octavos de final
     const knockoutMatches = [];
-    
+
     // Asumiendo que tenemos 8 grupos (2 por zona), creamos 8 partidos
     // 1º Grupo A vs 4º Grupo B, 2º Grupo A vs 3º Grupo B, etc.
     for (let i = 0; i < groupStandings.length; i += 2) {
       const groupA = groupStandings[i];
       const groupB = groupStandings[i + 1];
-      
+
       if (groupA && groupB) {
         // 1º vs 4º
         knockoutMatches.push({
@@ -387,16 +387,16 @@ export async function createKnockoutStage(leagueId: string): Promise<{ success: 
     });
 
     revalidatePath("/admin");
-    return { 
-      success: true, 
-      message: `Se creó la fase de eliminatorias con ${knockoutMatches.length} partidos` 
+    return {
+      success: true,
+      message: `Se creó la fase de eliminatorias con ${knockoutMatches.length} partidos`
     };
 
   } catch (error) {
     console.error("Error creando fase de eliminatorias:", error);
-    return { 
-      success: false, 
-      message: "Error interno del servidor al crear eliminatorias" 
+    return {
+      success: false,
+      message: "Error interno del servidor al crear eliminatorias"
     };
   }
 }
@@ -405,7 +405,20 @@ export async function createKnockoutStage(leagueId: string): Promise<{ success: 
  * Obtiene todas las zonas disponibles
  * @returns Lista de zonas
  */
-export async function getAllZones(): Promise<{ success: boolean; data?: any; message?: string }> {
+type SimpleUser = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  handicap: number;
+  zoneId: string | null;
+  zone?: { id: string; name: string } | null;
+};
+
+/**
+ * Obtiene todas las zonas disponibles
+ * @returns Lista de zonas
+ */
+export async function getAllZones(): Promise<{ success: boolean; data?: { id: string; name: string; description: string | null; isActive: boolean }[]; message?: string }> {
   try {
     const zones = await prisma.zone.findMany({
       where: { isActive: true },
@@ -419,9 +432,9 @@ export async function getAllZones(): Promise<{ success: boolean; data?: any; mes
 
   } catch (error) {
     console.error("Error obteniendo zonas:", error);
-    return { 
-      success: false, 
-      message: "Error interno del servidor" 
+    return {
+      success: false,
+      message: "Error interno del servidor"
     };
   }
 }
@@ -454,17 +467,17 @@ export async function createZone(
     });
 
     revalidatePath("/admin");
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: `Zona "${name}" creada exitosamente`,
       zoneId: zone.id
     };
 
   } catch (error) {
     console.error("Error creando zona:", error);
-    return { 
-      success: false, 
-      message: "Error interno del servidor al crear la zona" 
+    return {
+      success: false,
+      message: "Error interno del servidor al crear la zona"
     };
   }
 }
@@ -474,7 +487,15 @@ export async function createZone(
  * @param leagueId - ID de la liga
  * @returns Usuarios agrupados por zona
  */
-export async function getUsersByZone(leagueId: string): Promise<{ success: boolean; data?: any; message?: string }> {
+export async function getUsersByZone(leagueId: string): Promise<{
+  success: boolean;
+  data?: {
+    usersByZone: Record<string, SimpleUser[]>;
+    totalUsers: number;
+    zones: string[]
+  };
+  message?: string
+}> {
   try {
     // Verificar liga
     const league = await prisma.league.findUnique({ where: { id: leagueId } });
@@ -495,10 +516,19 @@ export async function getUsersByZone(leagueId: string): Promise<{ success: boole
         }
       }
     });
-    const subscribedUsers = subscriptions.map((s) => s.user as { id: string; name: string | null; email: string | null; handicap: number; zone: { id: string; name: string } | null });
+
+    // Map to SimpleUser type
+    const subscribedUsers: SimpleUser[] = subscriptions.map((s) => ({
+      id: s.user.id,
+      name: s.user.name,
+      email: s.user.email,
+      handicap: s.user.handicap,
+      zoneId: s.user.zone?.id || null,
+      zone: s.user.zone
+    }));
 
     // Agrupar por zona
-    const usersByZone: Record<string, typeof subscribedUsers> = {};
+    const usersByZone: Record<string, SimpleUser[]> = {};
     for (const user of subscribedUsers) {
       const zid = user.zone?.id;
       if (!zid) continue;
@@ -517,9 +547,9 @@ export async function getUsersByZone(leagueId: string): Promise<{ success: boole
 
   } catch (error) {
     console.error("Error obteniendo usuarios por zona:", error);
-    return { 
-      success: false, 
-      message: "Error interno del servidor" 
+    return {
+      success: false,
+      message: "Error interno del servidor"
     };
   }
 }
@@ -529,7 +559,16 @@ export async function getUsersByZone(leagueId: string): Promise<{ success: boole
  * @param group - Grupo con partidos y jugadores
  * @returns Array ordenado de jugadores por posición
  */
-async function calculateGroupStandings(group: any) {
+async function calculateGroupStandings(group: {
+  players: { playerId: string; player: { name: string | null } }[];
+  matches: {
+    status: string;
+    homePlayerScore: number | null;
+    awayPlayerScore: number | null;
+    homePlayerId: string;
+    awayPlayerId: string;
+  }[]
+}) {
   const playerStats = new Map();
 
   // Inicializar estadísticas de cada jugador

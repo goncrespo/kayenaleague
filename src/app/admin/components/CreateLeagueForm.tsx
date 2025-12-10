@@ -23,7 +23,7 @@ export default function CreateLeagueForm({ onLeagueCreated }: CreateLeagueFormPr
 
     try {
       const result = await createLeague(formData.name, formData.startDate, formData.endDate);
-      
+
       if (result.success) {
         setMessage({ type: "success", text: result.message });
         setFormData({ name: "", startDate: "", endDate: "" });
@@ -33,7 +33,7 @@ export default function CreateLeagueForm({ onLeagueCreated }: CreateLeagueFormPr
       } else {
         setMessage({ type: "error", text: result.message });
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: "error", text: "Error inesperado al crear la liga" });
     } finally {
       setLoading(false);
@@ -52,13 +52,12 @@ export default function CreateLeagueForm({ onLeagueCreated }: CreateLeagueFormPr
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
         Crear Nueva Liga
       </h3>
-      
+
       {message && (
-        <div className={`mb-4 p-3 rounded-md ${
-          message.type === "success" 
+        <div className={`mb-4 p-3 rounded-md ${message.type === "success"
             ? "bg-green-50 border border-green-200 text-green-800"
             : "bg-red-50 border border-red-200 text-red-800"
-        }`}>
+          }`}>
           {message.text}
         </div>
       )}
@@ -116,7 +115,7 @@ export default function CreateLeagueForm({ onLeagueCreated }: CreateLeagueFormPr
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h4 className="font-medium text-blue-900 mb-2">ℹ️ Información sobre Zonas</h4>
           <p className="text-sm text-blue-800">
-            Los grupos se crearán automáticamente basándose en las zonas asignadas a los usuarios en sus perfiles. 
+            Los grupos se crearán automáticamente basándose en las zonas asignadas a los usuarios en sus perfiles.
             Los grupos se generarán por zonas, agotando los usuarios de una zona antes de pasar a la siguiente.
           </p>
         </div>
@@ -124,11 +123,10 @@ export default function CreateLeagueForm({ onLeagueCreated }: CreateLeagueFormPr
         <button
           type="submit"
           disabled={loading}
-          className={`w-full py-2 px-4 rounded-md font-medium text-white transition-colors ${
-            loading
+          className={`w-full py-2 px-4 rounded-md font-medium text-white transition-colors ${loading
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          }`}
+            }`}
         >
           {loading ? (
             <div className="flex items-center justify-center">

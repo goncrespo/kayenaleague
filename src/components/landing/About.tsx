@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 export default function About() {
   const items = [
@@ -35,15 +36,16 @@ export default function About() {
               transition={{ duration: 0.6, delay: i * 0.1 }}
               className="text-center space-y-4"
             >
-              <div className="mx-auto h-28 w-28 rounded-full ring-1 ring-emerald-400/30 overflow-hidden">
-                <img
+              <div className="relative mx-auto h-28 w-28 rounded-full ring-1 ring-emerald-400/30 overflow-hidden">
+                <Image
                   src={it.img}
                   alt={it.title}
-                  className={"h-full w-full object-cover " + (it.title === "Conecta" ? "object-[50%_20%]" : "")}
+                  fill
+                  className={"object-cover " + (it.title === "Conecta" ? "object-[50%_20%]" : "")}
                 />
               </div>
               <h3 className="font-semibold text-emerald-300">{it.title}</h3>
-              <p className="text-white/80">{it.text}</p>
+              <p className="text-gray-300">{it.text}</p>
             </motion.div>
           ))}
         </div>
