@@ -38,7 +38,13 @@ export default function Header() {
         <Link href="/" className="font-bold text-xl tracking-tighter text-white hover:text-emerald-400 transition-colors">
           KAYENA <span className="text-emerald-400">LEAGUE</span>
         </Link>
-        <nav>
+        <nav className="flex items-center gap-6">
+          <Link
+            href="/contact"
+            className={`text-sm font-medium transition-colors ${isScrolled ? "text-white hover:text-emerald-400" : "text-white hover:text-emerald-400"}`}
+          >
+            Contacto
+          </Link>
           <Link
             href="/register"
             className={`text-sm font-medium transition-all duration-300 px-6 py-2.5 rounded-full ${isScrolled

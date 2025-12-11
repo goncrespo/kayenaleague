@@ -38,6 +38,20 @@ export default function RegisterForm() {
   const [priceError, setPriceError] = useState<string | null>(null);
   const [activeLeague, setActiveLeague] = useState<Competition | null>(null);
   const [zones, setZones] = useState<Zone[]>([]);
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+
+  // Cargar ciudades con competición activa
+  useEffect(() => {
+    async function loadCities() {
+      try {
+        const cities = await apiFetch<string[]>("/api/active-cities");
+        setAvailableCities(cities);
+      } catch (err) {
+        console.error("Error al cargar ciudades:", err);
+      }
+    }
+    loadCities();
+  }, []);
 
   // Cargar competición activa cuando se selecciona ciudad
   useEffect(() => {
@@ -142,7 +156,7 @@ export default function RegisterForm() {
 
       <div className="space-y-2">
         <label htmlFor="phone" className="block text-sm font-medium">Teléfono</label>
-        <input id="phone" name="phone" type="tel" required pattern="^(?:\\+34)?[\\s-]?(6|7|8|9)\\d{2}[\\s-]?\\d{3}[\\s-]?\\d{3}$" placeholder="Ej. +34 600 112 233" className="input" aria-invalid={!!state?.errors?.phone} aria-describedby={state?.errors?.phone ? "phone-error" : undefined} />
+        <input id="phone" name="phone" type="tel" required pattern="^(?:(?:\+|00)34[\s-]?)?[67]\d{2}[\s-]?\d{3}[\s-]?\d{3}$" placeholder="Ej. 600 112 233" className="input" aria-invalid={!!state?.errors?.phone} aria-describedby={state?.errors?.phone ? "phone-error" : undefined} />
         {state?.errors?.phone && <p id="phone-error" className="text-xs text-red-600">{state.errors.phone}</p>}
       </div>
 
@@ -151,6 +165,12 @@ export default function RegisterForm() {
         <input id="password" name="password" type="password" required minLength={8} className="input" aria-invalid={!!state?.errors?.password} aria-describedby={state?.errors?.password ? "password-error" : undefined} />
         <p className="text-xs text-gray-500">Mínimo 8 caracteres.</p>
         {state?.errors?.password && <p id="password-error" className="text-xs text-red-600">{state.errors.password}</p>}
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="confirmPassword" className="block text-sm font-medium">Confirmar Contraseña</label>
+        <input id="confirmPassword" name="confirmPassword" type="password" required minLength={8} className="input" aria-invalid={!!state?.errors?.confirmPassword} aria-describedby={state?.errors?.confirmPassword ? "confirmPassword-error" : undefined} />
+        {state?.errors?.confirmPassword && <p id="confirmPassword-error" className="text-xs text-red-600">{state.errors.confirmPassword}</p>}
       </div>
 
       <div className="space-y-2">
@@ -171,15 +191,15 @@ export default function RegisterForm() {
         {state?.errors?.city && <p className="text-xs text-red-600">{state.errors.city}</p>}
       </div>
 
-      {/* Select de zona - solo se muestra cuando hay una ciudad seleccionada */}
-      {city && (
+      {/* Select de zona - solo se muestra si es MADRID */}
+      {city === "MADRID" && (
         <div className="space-y-2">
           <label htmlFor="zoneId" className="block text-sm font-medium">Zona</label>
-          <select 
-            id="zoneId" 
-            name="zoneId" 
-            required 
-            className="input" 
+          <select
+            id="zoneId"
+            name="zoneId"
+            required
+            className="input"
             value={selectedZone}
             onChange={(e) => setSelectedZone(e.target.value)}
             disabled={loadingZones}
@@ -230,4 +250,4 @@ export default function RegisterForm() {
       </p>
     </form>
   );
-} 
+}
