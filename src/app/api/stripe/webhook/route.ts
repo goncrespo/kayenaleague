@@ -33,7 +33,10 @@ export async function POST(req: NextRequest) {
         if (userId) {
           const user = await prisma.user.update({
             where: { id: userId },
-            data: { role: "USER" }
+            data: {
+              role: "USER",
+              emailVerified: new Date()
+            }
           });
 
           if (user && user.email) {

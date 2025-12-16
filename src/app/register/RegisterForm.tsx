@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { useFormStatus } from "react-dom";
+
 import { registerAction, type RegisterState } from "./actions";
 import Alert from "@/components/ui/Alert";
 import { apiFetch, ApiError } from "@/lib/http";
@@ -21,17 +21,23 @@ interface Competition {
   price: number;
 }
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button type="submit" disabled={pending} className="btn-primary w-full disabled:opacity-60">
-      {pending ? "Registrando..." : "Registrarme"}
-    </button>
-  );
-}
+
 
 export default function RegisterForm() {
   const [state, action] = useActionState<RegisterState, FormData>(registerAction, {} as RegisterState);
+
+  // States for form fields that need real-time validation
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Validation Error States
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
+
   const [city, setCity] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [price, setPrice] = useState<string>("");
@@ -39,6 +45,65 @@ export default function RegisterForm() {
   const [activeLeague, setActiveLeague] = useState<Competition | null>(null);
   const [zones, setZones] = useState<Zone[]>([]);
   const [availableCities, setAvailableCities] = useState<string[]>([]);
+
+  // Regex Patterns
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^(?:(?:\+|00)34[\s-]?)?[67]\d{2}[\s-]?\d{3}[\s-]?\d{3}$/;
+
+  // Validate Email
+  useEffect(() => {
+    if (!email) {
+      setEmailError(null);
+      return;
+    }
+    if (!emailRegex.test(email)) {
+      setEmailError("Introduce un email válido.");
+    } else {
+      setEmailError(null);
+    }
+  }, [email]);
+
+  // Validate Phone
+  useEffect(() => {
+    if (!phone) {
+      setPhoneError(null);
+      return;
+    }
+    if (!phoneRegex.test(phone)) {
+      setPhoneError("Introduce un número de móvil válido (ej: 600123456).");
+    } else {
+      setPhoneError(null);
+    }
+  }, [phone]);
+
+  // Validate Password Length
+  useEffect(() => {
+    if (!password) {
+      setPasswordError(null);
+      return;
+    }
+    if (password.length < 8) {
+      setPasswordError("La contraseña debe tener al menos 8 caracteres.");
+    } else {
+      setPasswordError(null);
+    }
+  }, [password]);
+
+  // Validate Password Match
+  useEffect(() => {
+    if (!confirmPassword) {
+      setConfirmPasswordError(null);
+      return;
+    }
+    if (confirmPassword !== password) {
+      setConfirmPasswordError("Las contraseñas no coinciden.");
+    } else {
+      setConfirmPasswordError(null);
+    }
+  }, [confirmPassword, password]);
+
+  const isValid = !emailError && !phoneError && !passwordError && !confirmPasswordError &&
+    email && phone && password && confirmPassword && acceptTerms && city;
 
   // Cargar ciudades con competición activa
   useEffect(() => {
@@ -82,19 +147,27 @@ export default function RegisterForm() {
 
   // Precio desde la liga activa
   useEffect(() => {
+    // Si no hay ciudad seleccionada, no mostramos error de precio
+    if (!city) {
+      setPriceError(null);
+      return;
+    }
+
     if (activeLeague?.price != null) {
       const numericPrice = Number(activeLeague.price);
       if (!isNaN(numericPrice)) {
         setPrice(`${numericPrice.toFixed(2)} €`);
+        setPriceError(null);
       } else {
         setPrice("—");
         setPriceError("Precio no válido");
       }
     } else {
+      // Si hay ciudad pero no activeLeague (y ya cargó), o activeLeague sin precio
       setPrice("—");
       setPriceError("No se pudo cargar el precio");
     }
-  }, [activeLeague]);
+  }, [activeLeague, city]);
 
   // Cargar zonas cuando se selecciona ciudad
   useEffect(() => {
@@ -127,7 +200,7 @@ export default function RegisterForm() {
       {activeLeague && (
         <input type="hidden" name="leagueId" value={activeLeague.id} />
       )}
-      <h1 className="text-2xl font-semibold text-center">Crear cuenta</h1>
+      <h1 className="text-2xl font-semibold text-center">Únete a la liga</h1>
 
       {priceError && <Alert variant="warning">{priceError}</Alert>}
 
@@ -150,27 +223,31 @@ export default function RegisterForm() {
 
       <div className="space-y-2">
         <label htmlFor="email" className="block text-sm font-medium">Email</label>
-        <input id="email" name="email" type="email" required pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" className="input" aria-invalid={!!state?.errors?.email} aria-describedby={state?.errors?.email ? "email-error" : undefined} />
-        {state?.errors?.email && <p id="email-error" className="text-xs text-red-600">{state.errors.email}</p>}
+        <input id="email" name="email" type="email" required className={`input ${emailError ? "border-red-500 focus:ring-red-500" : ""}`} value={email} onChange={(e) => setEmail(e.target.value)} />
+        {emailError && <p className="text-xs text-red-500">{emailError}</p>}
+        {state?.errors?.email && <p className="text-xs text-red-600">{state.errors.email}</p>}
       </div>
 
       <div className="space-y-2">
         <label htmlFor="phone" className="block text-sm font-medium">Teléfono</label>
-        <input id="phone" name="phone" type="tel" required pattern="^(?:(?:\+|00)34[\s-]?)?[67]\d{2}[\s-]?\d{3}[\s-]?\d{3}$" placeholder="Ej. 600 112 233" className="input" aria-invalid={!!state?.errors?.phone} aria-describedby={state?.errors?.phone ? "phone-error" : undefined} />
-        {state?.errors?.phone && <p id="phone-error" className="text-xs text-red-600">{state.errors.phone}</p>}
+        <input id="phone" name="phone" type="tel" required placeholder="Ej. 600 112 233" className={`input ${phoneError ? "border-red-500 focus:ring-red-500" : ""}`} value={phone} onChange={(e) => setPhone(e.target.value)} />
+        {phoneError && <p className="text-xs text-red-500">{phoneError}</p>}
+        {state?.errors?.phone && <p className="text-xs text-red-600">{state.errors.phone}</p>}
       </div>
 
       <div className="space-y-2">
         <label htmlFor="password" className="block text-sm font-medium">Contraseña</label>
-        <input id="password" name="password" type="password" required minLength={8} className="input" aria-invalid={!!state?.errors?.password} aria-describedby={state?.errors?.password ? "password-error" : undefined} />
+        <input id="password" name="password" type="password" required minLength={8} className={`input ${passwordError ? "border-red-500 focus:ring-red-500" : ""}`} value={password} onChange={(e) => setPassword(e.target.value)} />
         <p className="text-xs text-gray-500">Mínimo 8 caracteres.</p>
-        {state?.errors?.password && <p id="password-error" className="text-xs text-red-600">{state.errors.password}</p>}
+        {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
+        {state?.errors?.password && <p className="text-xs text-red-600">{state.errors.password}</p>}
       </div>
 
       <div className="space-y-2">
         <label htmlFor="confirmPassword" className="block text-sm font-medium">Confirmar Contraseña</label>
-        <input id="confirmPassword" name="confirmPassword" type="password" required minLength={8} className="input" aria-invalid={!!state?.errors?.confirmPassword} aria-describedby={state?.errors?.confirmPassword ? "confirmPassword-error" : undefined} />
-        {state?.errors?.confirmPassword && <p id="confirmPassword-error" className="text-xs text-red-600">{state.errors.confirmPassword}</p>}
+        <input id="confirmPassword" name="confirmPassword" type="password" required minLength={8} className={`input ${confirmPasswordError ? "border-red-500 focus:ring-red-500" : ""}`} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+        {confirmPasswordError && <p className="text-xs text-red-500">{confirmPasswordError}</p>}
+        {state?.errors?.confirmPassword && <p className="text-xs text-red-600">{state.errors.confirmPassword}</p>}
       </div>
 
       <div className="space-y-2">
@@ -243,7 +320,16 @@ export default function RegisterForm() {
         <div className="text-right text-xs text-gray-500">Pago seguro con Stripe</div>
       </div>
 
-      <SubmitButton />
+      <button
+        type="submit"
+        disabled={!isValid}
+        className={`w-full py-4 text-black font-bold text-lg rounded-full transition-all duration-300 ${isValid
+          ? "bg-emerald-400 hover:bg-emerald-300 hover:scale-[1.02] shadow-[0_0_20px_rgba(52,211,153,0.4)]"
+          : "bg-gray-600 cursor-not-allowed opacity-50"
+          }`}
+      >
+        Registrarme
+      </button>
 
       <p className="text-center text-sm text-gray-600">
         ¿Ya tienes cuenta? <a href="/signin" className="underline">Inicia sesión</a>

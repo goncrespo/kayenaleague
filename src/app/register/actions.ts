@@ -3,8 +3,6 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { redirect } from "next/navigation";
-import { randomBytes } from "crypto";
-import { sendVerificationEmail } from "@/lib/mail";
 import { stripe, STRIPE_PRICE_ID, getAppBaseUrl } from "@/lib/stripe";
 
 export type RegisterState = {
@@ -117,17 +115,8 @@ export async function registerAction(
     },
   });
 
-  // Crear token de verificación y enviar email
-  const token = randomBytes(32).toString("hex");
-  const expires = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24h
-  await prisma.verificationToken.create({ data: { identifier: email, token, expires } });
-
-  try {
-    await sendVerificationEmail({ to: email, token });
-  } catch {
-    // Non-blocking error
-    console.error("Error sending verification email");
-  }
+  // Ya no enviamos verificación de email, la confirmación es el pago.
+  // El usuario se marca como verificado tras el pago en el webhook de Stripe.
 
   // Crear sesión de Stripe con todos los datos del usuario en metadata
   const baseUrl = getAppBaseUrl();

@@ -41,7 +41,7 @@ export default function Header() {
         <nav className="flex items-center gap-6">
           <Link
             href="/contact"
-            className={`text-sm font-medium transition-colors ${isScrolled ? "text-white hover:text-emerald-400" : "text-white hover:text-emerald-400"}`}
+            className={`text-sm font-medium transition-colors px-4 py-2 rounded-full border border-transparent hover:border-white/20 ${isScrolled ? "text-white hover:text-emerald-400" : "text-white hover:text-emerald-400"}`}
           >
             Contacto
           </Link>

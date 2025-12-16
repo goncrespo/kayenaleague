@@ -19,6 +19,13 @@ export default function Step04Bracket() {
 
     return (
         <div className="h-full flex flex-col items-center justify-center gap-8">
+            <div className="text-center space-y-4 max-w-lg">
+                <h2 className="text-3xl font-bold text-white">Fase Final</h2>
+                <p className="text-gray-400 text-lg">
+                    El resultado en la fase regular determinará tu posición en el cuadro final.
+                </p>
+            </div>
+
             {/* Category Chips */}
             <div className="flex flex-wrap justify-center gap-3">
                 {categories.map((cat) => (

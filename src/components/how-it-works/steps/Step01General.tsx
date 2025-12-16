@@ -30,7 +30,7 @@ export default function Step01General() {
                     </div>
 
                     <p className="text-sm text-gray-400">
-                        Grupos de 3-5 jugadores de tu mismo nivel. Juegas contra todos a una vuelta.
+                        Grupos de 3 a 5 jugadores. Juegas contra todos a una vuelta. Tendrás 40 días para completar la fase de grupos.
                     </p>
                 </motion.div>
 
@@ -63,7 +63,7 @@ export default function Step01General() {
                     </div>
 
                     <p className="text-sm text-gray-400">
-                        Los mejores de cada grupo avanzan al cuadro final. Partidos a vida o muerte.
+                        En función de tu resultado en la fase general, ocuparás un puesto en el cuadro final. Partidos a vida o muerte.
                     </p>
                 </motion.div>
             </div>
@@ -75,7 +75,7 @@ export default function Step01General() {
                 className="text-center max-w-lg mx-auto"
             >
                 <p className="text-lg text-white font-medium">
-                    &quot;Compite contra gente de tu nivel, diviértete y lucha por el título.&quot;
+                    Compite a tu ritmo, sin bloquear tu agenda y con gente que comparte tu pasión.
                 </p>
             </motion.div>
         </div>
