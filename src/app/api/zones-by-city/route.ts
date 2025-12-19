@@ -39,10 +39,14 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json(formattedZones);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al obtener las zonas:", error);
     return NextResponse.json(
-      { error: "Error interno del servidor" },
+      {
+        error: "Error interno del servidor",
+        details: error?.message || "Unknown error",
+        stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     );
   }
