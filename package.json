@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "create-admin": "tsx scripts/create-admin.ts",
+    "postinstall": "prisma generate",
     "seed-zones": "tsx scripts/seed-zones.ts",
     "seed-dummy": "tsx scripts/seed-dummy-data.ts",
     "seed-test": "tsx scripts/quick-seed.ts",
