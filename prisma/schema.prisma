@@ -19,11 +19,11 @@ enum PlayPreference {
 }
 
 enum ZoneName {
-  NORTE
-  SUR
+  NORESTE
+  SUROESTE
   CENTRO
-  ESTE
-  OESTE
+  SURESTE
+  NOROESTE
 }
 
 enum MatchStatus {

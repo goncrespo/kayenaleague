@@ -27,20 +27,16 @@ export async function GET(request: Request) {
     });
 
     // Mapear los nombres de zona a español
-    const zoneNamesInSpanish = {
-      NORTE: "Norte",
-      SUR: "Sur",
-      CENTRO: "Centro",
-      ESTE: "Este",
-      OESTE: "Oeste",
-    };
-
-    const formattedZones = zones.map(zone => ({
-      id: zone.id,
-      name: zone.name,
-      label: zoneNamesInSpanish[zone.name as keyof typeof zoneNamesInSpanish] || zone.name,
-      description: zone.description,
-    }));
+    const formattedZones = zones.map(zone => {
+      // Formatear: NORESTE -> Noreste
+      const label = zone.name.charAt(0).toUpperCase() + zone.name.slice(1).toLowerCase();
+      return {
+        id: zone.id,
+        name: zone.name,
+        label: label,
+        description: zone.description,
+      };
+    });
 
     return NextResponse.json(formattedZones);
   } catch (error) {

@@ -45,6 +45,7 @@ export default function RegisterForm() {
   const [activeLeague, setActiveLeague] = useState<Competition | null>(null);
   const [zones, setZones] = useState<Zone[]>([]);
   const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [isMapOpen, setIsMapOpen] = useState(false);
 
   // Regex Patterns
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -290,6 +291,14 @@ export default function RegisterForm() {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={() => setIsMapOpen(true)}
+            className="text-xs text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            Identifica tu zona
+          </button>
           {state?.errors?.zoneId && <p className="text-xs text-red-600">{state.errors.zoneId}</p>}
         </div>
       )}
@@ -334,6 +343,31 @@ export default function RegisterForm() {
       <p className="text-center text-sm text-gray-600">
         ¿Ya tienes cuenta? <a href="/signin" className="underline">Inicia sesión</a>
       </p>
+
+      {/* Map Modal */}
+      {isMapOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={() => setIsMapOpen(false)}
+        >
+          <div
+            className="relative bg-[#111] p-2 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-white/10 shadow-2xl animate-in fade-in zoom-in duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setIsMapOpen(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-black/50 text-white rounded-full hover:bg-black/80 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <img
+              src="/images/MadridMap.png"
+              alt="Mapa de Zonas Madrid"
+              className="w-full h-full object-contain max-h-[85vh] rounded-xl"
+            />
+          </div>
+        </div>
+      )}
     </form>
   );
 }
